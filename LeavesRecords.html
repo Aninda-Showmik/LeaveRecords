@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Leave Tracker</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1c2430;--mu:#66707d;--bd:#e0e4ea;--ac:#2f6fed;--ok:#1f9d55;--wa:#d98a00;--er:#d64545}
+@media (prefers-color-scheme:dark){:root{--bg:#14181d;--card:#1d232b;--tx:#e8ecf1;--mu:#93a0af;--bd:#2c3540;--ac:#6b9bff;--ok:#4cc38a;--wa:#f0b04a;--er:#f07272}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:16px;margin:0 0 10px}
+.mu{color:var(--mu);font-size:13px}.er{color:var(--er);font-size:13px;margin-top:8px;min-height:18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:12px 0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}
+input,select,button{font:inherit;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+button{cursor:pointer;background:var(--ac);color:#fff;border:0}button.g{background:transparent;color:var(--mu);border:1px solid var(--bd)}
+.pill{display:flex;justify-content:space-between;font-size:14px;margin-top:10px}
+.bar{height:7px;border-radius:4px;background:var(--bd);overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;background:var(--ok)}
+.bar.w i{background:var(--wa)}.bar.e i{background:var(--er)}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:500;font-size:12px}
+.hide{display:none}.tabs{display:flex;gap:8px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<main>
+<div id="auth" class="card" style="max-width:460px;margin:40px auto">
+  <h1>Leave Tracker</h1>
+  <div class="mu" style="margin-bottom:12px">Your records are encrypted with your password and stored only in this browser.</div>
+  <div class="tabs"><button id="tl" type="button">Log in</button><button id="tr" type="button" class="g">Create account</button></div>
+  <div class="row" style="flex-direction:column;align-items:stretch">
+    <label>Employee ID<input id="aid" autocomplete="username"></label>
+    <label>Password<input id="apw" type="password" autocomplete="current-password"></label>
+    <div id="reg" class="hide" style="display:none;flex-direction:column;gap:10px">
+      <label>Confirm password<input id="apw2" type="password" autocomplete="new-password"></label>
+      <label>Your name<input id="anm"></label>
+      <label>Earned leave per year<input id="aea" type="number" value="0" min="0"></label>
+      <div class="row">
+        <label>Sick / year<input id="ask" type="number" value="14" style="width:90px"></label>
+        <label>Casual / year<input id="acs" type="number" value="10" style="width:90px"></label>
+        <label>Late / month<input id="ala" type="number" value="3" style="width:90px"></label>
+        <label>Early / month<input id="ael" type="number" value="3" style="width:90px"></label>
+      </div>
+    </div>
+    <button id="go" type="button">Log in</button>
+  </div>
+  <div class="er" id="aerr"></div>
+  <div class="mu">Moved to a new device? <a href="#" id="imp">Restore a backup file</a>, then log in.</div>
+  <input type="file" id="impf" accept=".json" class="hide">
+</div>
+
+<div id="app" class="hide">
+  <div class="row" style="justify-content:space-between;align-items:center">
+    <div><h1 id="who"></h1><div class="mu" id="sub"></div></div>
+    <div class="row"><button class="g" id="edit" type="button">Edit details</button><button class="g" id="out" type="button">Log out</button></div>
+  </div>
+  <div id="editbox" class="card hide">
+    <h2>Edit my details</h2>
+    <div class="row">
+      <label>Name<input id="enm"></label>
+      <label>Earned / year<input id="eea" type="number" style="width:100px"></label>
+      <label>Sick / year<input id="esk" type="number" style="width:90px"></label>
+      <label>Casual / year<input id="ecs" type="number" style="width:90px"></label>
+      <label>Late / month<input id="ela" type="number" style="width:90px"></label>
+      <label>Early / month<input id="eel" type="number" style="width:90px"></label>
+      <button id="esave" type="button">Save</button>
+    </div>
+  </div>
+  <div class="card row">
+    <label>Year<select id="yr"></select></label>
+    <label>Month (late / early)<select id="mo"></select></label>
+  </div>
+  <div class="card" id="sum"></div>
+  <div class="card">
+    <h2>Add an entry</h2>
+    <div class="row">
+      <label>Type<select id="et">
+        <option value="sick">Sick leave</option><option value="casual">Casual leave</option>
+        <option value="earned">Earned leave</option><option value="late">Late arrival</option><option value="early">Early leave</option></select></label>
+      <label>Date<input type="date" id="ed"></label>
+      <label id="dl">Days<input type="number" id="edays" value="1" step="0.5" min="0.5" style="width:80px"></label>
+      <label style="flex:1;min-width:140px">Note<input id="en" placeholder="optional"></label>
+      <button id="add" type="button">Add</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>My entries</h2>
+    <div class="scroll"><table><thead><tr><th>Date</th><th>Type</th><th>Days</th><th>Note</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div id="empty" class="mu" style="padding-top:8px"></div>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <div class="mu" style="margin-bottom:10px">Download a backup regularly. Clearing browser data erases your records, and a forgotten password cannot be recovered.</div>
+    <div class="row"><button class="g" id="bk" type="button">Download encrypted backup</button><button class="g" id="csv" type="button">Download entries as CSV</button></div>
+  </div>
+</div>
+</main>
+<script>
+const TYPES={sick:"Sick leave",casual:"Casual leave",earned:"Earned leave",late:"Late arrival",early:"Early leave"};
+const MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const $=id=>document.getElementById(id),enc=new TextEncoder(),dec=new TextDecoder();
+const now=new Date(),K=id=>"leave-tracker:"+id.trim().toLowerCase();
+let empId=null,key=null,salt=null,data=null,mode="login";
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML};
+function b64(u){let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode(...u.subarray(i,i+8192));return btoa(s)}
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function derive(pw,salt){const k=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:200000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function seal(){const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(data)));
+  localStorage.setItem(K(empId),JSON.stringify({v:1,empId,salt:b64(salt),iv:b64(iv),ct:b64(new Uint8Array(ct))}))}
+const err=m=>$("aerr").textContent=m||"";
+
+function setMode(m){mode=m;$("reg").style.display=m==="reg"?"flex":"none";$("go").textContent=m==="reg"?"Create account":"Log in";
+  $("tl").className=m==="login"?"":"g";$("tr").className=m==="reg"?"":"g";err()}
+$("tl").onclick=()=>setMode("login");$("tr").onclick=()=>setMode("reg");
+$("go").onclick=async()=>{
+  err();const id=$("aid").value.trim(),pw=$("apw").value;
+  if(!id||!pw){err("Enter your employee ID and password.");return}
+  try{
+    if(mode==="reg"){
+      if(localStorage.getItem(K(id))){err("An account with this ID already exists in this browser.");return}
+      if(pw.length<6){err("Use a password of at least 6 characters.");return}
+      if(pw!==$("apw2").value){err("Passwords do not match.");return}
+      if(!$("anm").value.trim()){err("Enter your name.");return}
+      empId=id;salt=crypto.getRandomValues(new Uint8Array(16));key=await derive(pw,salt);
+      data={profile:{name:$("anm").value.trim(),empId:id,earned:+$("aea").value||0,sick:+$("ask").value||0,casual:+$("acs").value||0,late:+$("ala").value||0,early:+$("ael").value||0},entries:[]};
+      await seal();
+    }else{
+      const raw=localStorage.getItem(K(id));if(!raw){err("No account found for this ID in this browser.");return}
+      const b=JSON.parse(raw);salt=unb64(b.salt);key=await derive(pw,salt);
+      try{const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(b.iv)},key,unb64(b.ct));data=JSON.parse(dec.decode(pt))}
+      catch(e){err("Wrong password.");return}
+      empId=b.empId||id;
+    }
+    $("apw").value=$("apw2").value="";showApp();
+  }catch(e){err("Something went wrong: "+e.message)}
+};
+$("imp").onclick=e=>{e.preventDefault();$("impf").click()};
+$("impf").onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{const b=JSON.parse(await f.text());if(!b.empId||!b.ct||!b.salt||!b.iv)throw 0;
+    if(localStorage.getItem(K(b.empId))&&!confirm("This replaces the existing account for ID "+b.empId+" in this browser. Continue?"))return;
+    localStorage.setItem(K(b.empId),JSON.stringify(b));$("aid").value=b.empId;setMode("login");err("Backup restored. Log in with your password.")}
+  catch(x){err("That file is not a valid backup.")}e.target.value=""};
+
+for(let y=now.getFullYear()-2;y<=now.getFullYear()+1;y++)$("yr").add(new Option(y,y));
+$("yr").value=now.getFullYear();MN.forEach((m,i)=>$("mo").add(new Option(m,i)));$("mo").value=now.getMonth();$("ed").value=iso(now);
+$("yr").onchange=$("mo").onchange=render;
+$("et").onchange=()=>{$("dl").style.display=["late","early"].includes($("et").value)?"none":"flex"};
+function showApp(){$("auth").classList.add("hide");$("app").classList.remove("hide");render()}
+$("out").onclick=()=>{key=data=null;empId=null;$("app").classList.add("hide");$("editbox").classList.add("hide");$("auth").classList.remove("hide");setMode("login")};
+$("edit").onclick=()=>{const p=data.profile;$("enm").value=p.name;$("eea").value=p.earned;$("esk").value=p.sick;$("ecs").value=p.casual;$("ela").value=p.late;$("eel").value=p.early;$("editbox").classList.toggle("hide")};
+$("esave").onclick=async()=>{Object.assign(data.profile,{name:$("enm").value.trim()||data.profile.name,earned:+$("eea").value||0,sick:+$("esk").value||0,casual:+$("ecs").value||0,late:+$("ela").value||0,early:+$("eel").value||0});await seal();$("editbox").classList.add("hide");render()};
+$("add").onclick=async()=>{const t=$("et").value,d=$("ed").value;if(!d)return;
+  const days=["late","early"].includes(t)?1:parseFloat($("edays").value)||1;
+  data.entries.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),type:t,date:d,days,note:$("en").value.trim()});
+  $("en").value="";await seal();render()};
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+$("bk").onclick=()=>dl("leave-backup-"+empId+"-"+iso(now)+".json",localStorage.getItem(K(empId)),"application/json");
+$("csv").onclick=()=>{const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';
+  const rows=[["Date","Type","Days","Note"],...[...data.entries].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,TYPES[e.type],["late","early"].includes(e.type)?"":e.days,e.note])];
+  dl("leave-entries-"+empId+".csv",rows.map(r=>r.map(q).join(",")).join("\n"),"text/csv")};
+const bar=(u,mx)=>{const r=mx>0?u/mx:(u>0?1:0);const c=r>=1?"e":r>=.8?"w":"";return `<div class="bar ${c}"><i style="width:${Math.min(100,r*100)}%"></i></div>`};
+function render(){
+  if(!data)return;const p=data.profile,y=$("yr").value,m=+$("mo").value;
+  $("who").textContent=p.name;$("sub").textContent="Employee ID: "+p.empId;
+  const ye=data.entries.filter(e=>e.date.startsWith(y));
+  const used=t=>ye.filter(e=>e.type===t).reduce((a,e)=>a+(+e.days||0),0);
+  const cnt=t=>ye.filter(e=>e.type===t&&+e.date.slice(5,7)-1===m).length;
+  const row=(l,u,mx)=>`<div class="pill"><span>${l}</span><span>${u} used of ${mx}, ${mx-u} left</span></div>${bar(u,mx)}`;
+  const lim=(l,u,mx)=>`<div class="pill"><span>${l}</span><span>${u} of ${mx} this month</span></div>${bar(u,mx)}`;
+  $("sum").innerHTML=`<h2>Balances for ${y}</h2>${row("Sick leave",used("sick"),p.sick)}${row("Casual leave",used("casual"),p.casual)}${row("Earned leave",used("earned"),p.earned)}${lim("Late arrivals, "+MN[m],cnt("late"),p.late)}${lim("Early leaves, "+MN[m],cnt("early"),p.early)}`;
+  const list=[...ye].sort((a,b)=>b.date.localeCompare(a.date));
+  $("tb").innerHTML=list.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(TYPES[e.type])}</td><td>${["late","early"].includes(e.type)?"":esc(e.days)}</td><td>${esc(e.note)}</td><td><button class="g" type="button" data-id="${esc(e.id)}">Delete</button></td></tr>`).join("");
+  $("empty").textContent=list.length?"":"No entries for this year.";
+  $("tb").querySelectorAll("button").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this entry?"))return;data.entries=data.entries.filter(e=>e.id!==b.dataset.id);await seal();render()});
+}
+</script>
+</body>
+</html>
